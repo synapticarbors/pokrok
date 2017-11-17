@@ -1,4 +1,4 @@
-PyPI offers at least 30 different progress meter packages? Which one should you use? Why choose? With pokrok, you can access a number of popular packages using a single consistent interface. With this approach, you can:
+PyPI offers at least 30 different progress meter packages. Which one should you use? Why choose? With pokrok, you can access a number of popular packages using a single consistent interface. With this approach, you can:
 
 1. Allow your users to configure their favorite package.
 2. Switch from one progress meter implementation to another without having to rewrite any code.
@@ -15,6 +15,20 @@ In addition to the progress indicator, each type of progress meter may be accomp
 
 Pokrok provides a simple API for displaying progress bars and spinners. The actual work is done by any one of many available progress bar packges in python. For each package, a sensible default display is provided. In addition, high-level configuration options are provided for limited customization of the bar/spinner display without having to know the details of the underlying progress bar/spinner implementation. Finally, access to the fine-grained configuration of the underlying package is provided for those that want it.
 
+# Installation
+
+Pokrok requires python 3.4+.
+
+```bash
+pip install pokrok
+```
+
+This will install pokrok, but for pokrok to be useful it also needs at least one supported progress bar package to be installed. Some examples are:
+
+* tqdm
+* progressbar2
+* halo
+
 # Examples
 
 ```python
@@ -24,7 +38,7 @@ import random
 # Configure pokrok with a list of your preferred progress bars, in order. Set
 # exclusive=True to prevent pokrok from using any other packages but the ones
 # you specify.
-pk.packages(['tqdm', 'progressbar2', 'halo'], exclusive=True)
+pk.set_packages(['tqdm', 'progressbar2', 'halo'], exclusive=True)
 
 # Show progress while iterating 100 times 
 numbers = [random.random() for i in pk.progress_range(100)]
@@ -44,7 +58,7 @@ for num in pk.progress_iter(generate_random(100), size=100):
     print(num)
 
 # Get a progress context manager bar you can control manually.
-with pk.progress_bar(size=100) as bar:
+with pk.progress_meter(size=100) as bar:
     for i in range(1000):
         # Only update progress every 10 cycles
         if i % 10 == 0:
@@ -52,7 +66,7 @@ with pk.progress_bar(size=100) as bar:
         print(i)
 
 # Or take full control.
-bar = pk.progress_bar(size=100)
+bar = pk.progress_meter(size=100)
 bar.start()
 for i in range(1000):
     # Only update progress every 10 cycles
@@ -68,14 +82,21 @@ If you'd just like to use the default implementations provided by whatever plugi
 
 ## High-level configuration
 
-Pokrok defines a set of widgets that are commonly provided by progress meter packages. You can customize the display by listing any combination of these widgets in the order you want them to appear (left-to-right). If the underlying progress meter does not provide the desired widget, You can set this configuration globally, or on a per-progress meter basis.
+Pokrok defines a set of widgets that are commonly provided by progress meter packages. Widgets are combined into "styles." A style is simply a listing of the desired widgets (left-to-right). Separate widget lists can be provided for sized (i.e. progress bar) versus unsized (i.e. spinner) progress meters. There is a global default style, and any number of named styles can be created. When a style is used to create a progress meter, the underlying progress meter library will do its best to provide the desired display; any widgets it cannot provide are ignored silently.
 
 ```python
 # Global configuration
-pk.widgets(bar=[pk.BAR, pk.ETA], spinner=[pk.SPINNER, pk.ELAPSED])
+from pokrok import set_styles, progress_meter, Style, Widget as w
+set_styles(
+    default=Style(sized=[w.BAR, w.ETA], unsized=[w.SPINNER, w.ELAPSED]),
+    kitchen_sink=Style([w.SPINNER, w.BAR, w.ELAPSED, w.ETA])
+)
+
+# Use a pre-defined configuration
+bar = progress_meter(size=100, style='kitchen_sink')
 
 # Per-progress meter configuration
-bar = pk.progress_bar(size=100, widgets=[pk.BAR, pk.ETA])
+bar = progress_meter(size=100, style=Style([w.ETA, w.ELAPSED, w.BAR]))
 ```
 
 ## Fine-grained configuration
@@ -90,6 +111,8 @@ By default, the first file discovered is loaded and used for configuration. You 
 
 
 ```python
+import pokrok as pk
+
 # Execute the default configuration behavior (this happens by default when the 
 # first progress meter is requested, so while you can call the configure() 
 # function explicitly, you don't have to unless you intend to override any options.
@@ -97,7 +120,7 @@ pk.configure()
 
 # Load the configuration from an alternate file path, and override options for the
 # tqdm and halo libraries.
-pk.configure(_file='~/config.pokrok')
+pk.configure(filename='~/config.pokrok')
 pk.configure(
     tqdm=dict(ncols=100, unit='sec'), 
     halo=dict(spinner='dots', color='blue')
@@ -112,11 +135,11 @@ Plugins are created by implementing the pokrok API. The easiest way to do this i
 
 ```
 
-To make the plugin visible to pokrok, add an entry point in your setup.py.
+To make the plugin visible to pokrok, add an entry point in your setup.py. For example, here is how the built-in TQDM plugin is configured:
 
 ```python
 entry_points="""
     [pokrok]
-    ß
+    tqdm=pokrok.plugins.tqdm:TqdmProgressMeterFactory
 """
 ```

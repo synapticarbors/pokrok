@@ -6,6 +6,10 @@ import sys
 from setuptools import setup, find_packages
 import versioneer
 
+if sys.version_info < (3, 4):
+    sys.stdout.write("At least Python 3.4 is required.\n")
+    sys.exit(1)
+
 setup(
     name = 'pokrok',
     version = versioneer.get_version(),
@@ -21,6 +25,11 @@ setup(
         'progressbar' : ['progressbar2'],
         'tqdm' : ['tqdm'],
     },
+    entry_points = {
+        'pokrok' : [
+            'tqdm=pokrok.plugins.tqdm:TqdmProgressMeterFactory'
+        ]
+    },
     classifiers = [
         "Development Status :: 3 - Alpha",
         "Environment :: Console",
@@ -28,7 +37,9 @@ setup(
         "Topic :: Software Development :: User Interfaces",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3"
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6"
     ]
 )

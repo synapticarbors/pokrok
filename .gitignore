@@ -1,0 +1,4 @@
+build/
+dist/
+pokrok.egg-info/
+__pycache__/
