@@ -55,7 +55,7 @@ release:
 	git tag $(version)
 	# build
 	$(BUILD)
-	$(TEST)
+	#$(TEST)
 	python setup.py sdist bdist_wheel
 	# release
 	twine upload dist/$(module)-$(version).tar.gz
