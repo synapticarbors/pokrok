@@ -22,7 +22,7 @@ class PluginManager:
     def __init__(self):
         self.plugins = None
 
-    def set_plugin_options(self, **kwargs):
+    def set_plugin_options(self, config=None, **kwargs):
         pass
 
     def load_plugins(self, names=None, exclusive=False):

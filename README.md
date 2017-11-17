@@ -101,6 +101,8 @@ bar = progress_meter(size=100, style=Style([w.ETA, w.ELAPSED, w.BAR]))
 
 ## Fine-grained configuration
 
+**NOTE: the fine-grained configuration support described below is still being implemented.** 
+
 You can also specify configuration options for each of the progress meter packages you want to support. All configuration options can be set via a JSON configuration file, '.pokrok'. Pokrok looks for this file by default in the following places (in order):
 
 1. ~/.pokrok
@@ -129,10 +131,44 @@ pk.configure(
 
 # Plugins
 
-Plugins are created by implementing the pokrok API. The easiest way to do this is to extend the pokrok.ProgressMeters base class.
+Plugins are created by implementing the pokrok API. The easiest way to do this is to extend the base classes in pokrok.plugins. For example, here is the implementation of the built-in `tqdm` module:
 
 ```python
+from pokrok.plugins import (
+    DefaultProgressMeterFactory, BaseProgressMeter, Status)
+from pokrok.styles import Style, Widget
 
+
+class TqdmProgressMeterFactory(DefaultProgressMeterFactory):
+    def __init__(self):
+        style_superset = Style([
+            Widget.BAR, Widget.ETA, Widget.ELAPSED, Widget.SPINNER
+        ])
+        super().__init__('tqdm', TqdmProgressMeter, style_superset)
+
+    def iterate(
+            self, iterable, size=None, widgets=None, desc=None, start=None,
+            **kwargs):
+        if self._load_module():
+            return self._module.tqdm(
+                iterable, total=size, desc=desc, initial=start or 0, **kwargs)
+        else:
+            return iterable
+
+
+class TqdmProgressMeter(BaseProgressMeter):
+    def __init__(self, mod, size, style, desc, start, **kwargs):
+        super().__init__(size)
+        self.tqdm = mod.tqdm(
+            total=size, desc=desc, initial=start or 0, **kwargs)
+
+    def finish(self):
+        super().finish()
+        self.tqdm.close()
+
+    def increment(self, n=1):
+        self._check_status(Status.STARTED)
+        self.tqdm.update(n)
 ```
 
 To make the plugin visible to pokrok, add an entry point in your setup.py. For example, here is how the built-in TQDM plugin is configured:

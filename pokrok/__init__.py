@@ -13,9 +13,12 @@ choose whether or not to use those arguments.
 * plugin_name: Name of a specific plugin to use.
 
 """
+import json
 import math
-from pokrok.plugins import PluginManager
-from pokrok.styles import StyleManager, Style, Widget
+import pokrok.plugins
+import pokrok.styles
+
+from pokrok.styles import Style, Widget
 
 from ._version import get_versions
 __version__ = get_versions()['version']
@@ -24,14 +27,17 @@ del get_versions
 
 class ProgressFactory:
     def __init__(self):
-        self.plugins = PluginManager()
-        self.styles = StyleManager()
+        self.plugins = pokrok.plugins.PluginManager()
+        self.styles = pokrok.styles.StyleManager()
 
     def configure(
             self, filename=None, package_names=None, exclusive=False,
             styles=None, **kwargs):
         if filename:
-            pass
+            with open(filename, 'rt') as inp:
+                config = json.load(inp)
+                self.plugins.set_plugin_options(config)
+                self.styles.set_style_options(config)
         if package_names:
             self.plugins.load_plugins(package_names, exclusive)
         if kwargs:
