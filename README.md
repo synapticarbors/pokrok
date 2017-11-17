@@ -179,3 +179,10 @@ entry_points="""
     tqdm=pokrok.plugins.tqdm:TqdmProgressMeterFactory
 """
 ```
+
+# TODO
+
+* Add manual and automatic error handling (with callback to the plugin).
+* Implement file-based configuration.
+* Add support for additional packages:
+    * progressbar2

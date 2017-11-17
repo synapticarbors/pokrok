@@ -215,7 +215,7 @@ class DefaultProgressMeterFactory(ProgressMeterFactory):
     def create(self, size=None, widgets=None, desc=None, start=None, **kwargs):
         self._load_module()
         return self._progress_meter_class(
-            module=self._module, size=None, widgets=None, desc=None, start=None,
+            mod=self._module, size=None, widgets=None, desc=None, start=None,
             **kwargs)
 
     def iterate(

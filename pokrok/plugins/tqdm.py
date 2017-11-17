@@ -21,7 +21,7 @@ class TqdmProgressMeterFactory(DefaultProgressMeterFactory):
 
 
 class TqdmProgressMeter(BaseProgressMeter):
-    def __init__(self, mod, size, style, desc, start, **kwargs):
+    def __init__(self, mod, size, widgets, desc, start, **kwargs):
         super().__init__(size)
         self.tqdm = mod.tqdm(
             total=size, desc=desc, initial=start or 0, **kwargs)

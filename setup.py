@@ -21,13 +21,10 @@ setup(
     license = 'MIT',
     packages = find_packages(),
     tests_require = ['pytest'], #, 'jinja2', 'pysam'],
-    extras_require = {
-        'progressbar' : ['progressbar2'],
-        'tqdm' : ['tqdm'],
-    },
     entry_points = {
         'pokrok' : [
-            'tqdm=pokrok.plugins.tqdm:TqdmProgressMeterFactory'
+            'tqdm=pokrok.plugins.tqdm:TqdmProgressMeterFactory',
+            'halo=pokrok.plugins.halo:HaloProgressMeterFactory'
         ]
     },
     classifiers = [
