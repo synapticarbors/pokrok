@@ -13,11 +13,13 @@ choose whether or not to use those arguments.
 * plugin_name: Name of a specific plugin to use.
 
 """
+import inspect
 import json
 import math
+import os
+
 import pokrok.plugins
 import pokrok.styles
-
 from pokrok.styles import Style, Widget
 
 from ._version import get_versions
@@ -29,17 +31,40 @@ class ProgressFactory:
     def __init__(self):
         self.plugins = pokrok.plugins.PluginManager()
         self.styles = pokrok.styles.StyleManager()
+        self.configured = False
+
+    @property
+    def default_paths(self):
+        return [
+            os.path.join(path, 'pokrok.json')
+            for path in (
+                os.getcwd(),
+                os.path.abspath(os.path.expanduser('~')))
+        ]
 
     def configure(
-            self, filename=None, package_names=None, exclusive=False,
+            self, filename=None, plugin_names=None, exclusive=False,
             styles=None, **kwargs):
+        if not (filename or self.configured):
+            for fname in self.default_paths:
+                if os.path.exists(fname):
+                    filename = fname
+                    break
+
         if filename:
-            with open(filename, 'rt') as inp:
-                config = json.load(inp)
-                self.plugins.set_plugin_options(config)
-                self.styles.set_style_options(config)
-        if package_names:
-            self.plugins.load_plugins(package_names, exclusive)
+            if os.path.exists(filename):
+                with open(filename, 'rt') as inp:
+                    config = json.load(inp)
+            else:
+                config = json.load(stream_from_package(filename))
+                if config is None:
+                    raise ValueError("File not found: {}".format(filename))
+            self.plugins.set_plugin_options(config)
+            self.styles.set_style_options(config)
+            self.configured = True
+
+        if plugin_names:
+            self.plugins.load_plugins(plugin_names, exclusive)
         if kwargs:
             self.plugins.set_plugin_options(**kwargs)
         if styles:
@@ -67,6 +92,9 @@ class ProgressFactory:
             ProgressMeterError if a specific plugin is requested and is not
             available or does not support the requested configuration.
         """
+        if not self.configured:
+            self.configure()
+
         if isinstance(style, str):
             style = self.styles[style] if style else None
 
@@ -96,18 +124,29 @@ class ProgressFactory:
             return None
 
 
+def stream_from_package(spec):
+    try:
+        package, path = spec.split(':')
+        import pkg_resources as pr
+        if pr.resource_exists(package, path):
+            return pr.resource_stream(package, path)
+    except:
+        pass
+    return None
+
+
 # Singleton factory class
 FACTORY = ProgressFactory()
 
 
-def set_packages(names, exclusive=False):
+def set_plugins(names, exclusive=False):
     """High-level configuration of progress meter packages.
 
     Args:
-        names: Names of packages to prefer, in order.
+        names: Names of plugins to prefer, in order.
         exclusive: Whether the listed packages should be the only ones allowed.
     """
-    FACTORY.configure(package_names=names, exclusive=exclusive)
+    FACTORY.configure(plugin_names=names, exclusive=exclusive)
 
 
 def set_styles(**styles):

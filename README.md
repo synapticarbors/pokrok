@@ -105,9 +105,8 @@ bar = progress_meter(size=100, style=Style([w.ETA, w.ELAPSED, w.BAR]))
 
 You can also specify configuration options for each of the progress meter packages you want to support. All configuration options can be set via a JSON configuration file, '.pokrok'. Pokrok looks for this file by default in the following places (in order):
 
-1. ~/.pokrok
-2. ./.pokrok
-3. In the root directory of the package containing the __main__ file
+1. ~/pokrok.json
+2. ./pokrok.json
 
 By default, the first file discovered is loaded and used for configuration. You can override or supplement this behavior using the `configure()` function. Configuration options for each package can be specified in a dict via a keyword argument to `configure()`. If a file and keyword arguments are given together, the options in the file override the keyword arguments (i.e. the keyword arguments are treated as defaults for options that are not specified in the file). To override this behavior, call the `configure()` function twice - first with the file, then with the keyword arguments. 
 
@@ -122,7 +121,7 @@ pk.configure()
 
 # Load the configuration from an alternate file path, and override options for the
 # tqdm and halo libraries.
-pk.configure(filename='~/config.pokrok')
+pk.configure(filename='~/pokrok.json')
 pk.configure(
     tqdm=dict(ncols=100, unit='sec'), 
     halo=dict(spinner='dots', color='blue')
