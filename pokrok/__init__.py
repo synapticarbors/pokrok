@@ -13,7 +13,7 @@ choose whether or not to use those arguments.
 * plugin_name: Name of a specific plugin to use.
 
 """
-import inspect
+from collections.abc import Sized
 import json
 import math
 import os
@@ -205,17 +205,22 @@ def progress_file(filename, mode, **kwargs):
         yield from progress_iter(f, **kwargs)
 
 
-def progress_iter(iterable, **kwargs):
+def progress_iter(iterable, size = None, **kwargs):
     """Wrap an iterable in a progress bar.
     
     Args:
         iterable: The iterable to wrap.
+        size: The number of items that will be iterated over by the iterable.
+            If None and this iterable happens to be Sized, the size will be
+            determined using `len`.
         kwargs: Additional arguments - see package documentation.
 
     Returns:
         An iterable.
     """
-    return FACTORY.create(iterable=iterable, **kwargs)
+    if size is None and isinstance(iterable, Sized):
+        size = len(iterable)
+    return FACTORY.create(iterable=iterable, size=size, **kwargs)
 
 
 def progress_meter(**kwargs):

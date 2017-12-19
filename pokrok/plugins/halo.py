@@ -17,6 +17,11 @@ class HaloProgressMeterFactory(DefaultProgressMeterFactory):
         else:
             return iterable
 
+    def provides(self, sized, widgets=None):
+        if sized:
+            return False
+        return not widgets or (len(widgets) == 1 and widgets[1] == Widget.SPINNER)
+
 
 class HaloProgressMeter(BaseProgressMeter):
     def __init__(self, mod, size, widgets, desc, start, **kwargs):

@@ -201,7 +201,6 @@ class DefaultProgressMeterFactory(ProgressMeterFactory):
     def installed(self):
         return self._load_module()
 
-
     def provides(self, sized, widgets=None):
         if not (widgets and self._style_superset):
             return True
