@@ -78,12 +78,20 @@ class PluginManager:
         if sized is None and widgets is None:
             return self.get_plugin(plugin_names[0])
 
-        for plugin_name in plugin_names:
-            plugin = self.get_plugin(plugin_name)
-            if plugin.provides(sized, widgets):
-                return plugin
+        def _find_first_plugin(force=False):
+            for plugin_name in plugin_names:
+                plugin = self.get_plugin(plugin_name)
+                if plugin.provides(sized, widgets, force=force):
+                    return plugin
 
-        return None
+        plugin = _find_first_plugin(force=False)
+
+        # If no plugin supports the requested configuration, try again
+        # with force = True
+        if plugin is None:
+            plugin = _find_first_plugin(force=True)
+
+        return plugin
 
 
 class ProgressMeterFactory(ABC):
@@ -201,7 +209,17 @@ class DefaultProgressMeterFactory(ProgressMeterFactory):
     def installed(self):
         return self._load_module()
 
-    def provides(self, sized, widgets=None):
+    def provides(self, sized, widgets=None, force=False):
+        """Return True if this plugin can provide a progress bar for the
+        requested parameter.
+
+        Args:
+            sized: Whether a sized meter bar is requested.
+            widgets: Requested set of widgets.
+            force: Whether to try to force the plugin to provide a progress
+                meter with the specified parameters, even if it typically
+                would not.
+        """
         if not (widgets and self._style_superset):
             return True
 

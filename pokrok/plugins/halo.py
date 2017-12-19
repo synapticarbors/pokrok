@@ -17,10 +17,12 @@ class HaloProgressMeterFactory(DefaultProgressMeterFactory):
         else:
             return iterable
 
-    def provides(self, sized, widgets=None):
-        if sized:
+    def provides(self, sized, widgets=None, force=False):
+        if sized and not force:
             return False
-        return not widgets or (len(widgets) == 1 and widgets[1] == Widget.SPINNER)
+        if widgets:
+            return len(widgets) == 1 and widgets[1] == Widget.SPINNER
+        return True
 
 
 class HaloProgressMeter(BaseProgressMeter):

@@ -43,6 +43,8 @@ class Style:
             self.unsized = self._resolve_widgets(unsized)
 
     def _resolve_widgets(self, widgets):
+        if widgets is None:
+            return None
         return [
             Widget[w] if isinstance(w, str) else w
             for w in widgets

@@ -106,7 +106,7 @@ class ProgressFactory:
                 raise ValueError(
                     "Plugin {} is not supported".format(plugin_name))
             plugin = self.plugins.get_plugin(plugin_name)
-            if not plugin.provides(sized, widgets):
+            if not plugin.provides(sized, widgets, force=True):
                 raise ValueError(
                     "Plugin {} does not support the requested configuration "
                     "(sized={}, style={})".format(plugin_name, sized, widgets))
@@ -207,7 +207,7 @@ def progress_file(filename, mode, **kwargs):
 
 def progress_iter(iterable, size = None, **kwargs):
     """Wrap an iterable in a progress bar.
-    
+
     Args:
         iterable: The iterable to wrap.
         size: The number of items that will be iterated over by the iterable.
