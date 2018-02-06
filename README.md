@@ -185,3 +185,5 @@ entry_points="""
 * Implement file-based configuration.
 * Add support for additional packages:
     * progressbar2
+* Add multi-progress bar support (e.g. for multithreading/multiprocessing)
+    * https://pypi.python.org/pypi/progrock/0.3.1
