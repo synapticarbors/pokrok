@@ -218,6 +218,8 @@ def progress_iter(iterable, size = None, **kwargs):
     Returns:
         An iterable.
     """
+    if iterable is None:
+        raise ValueError("Invalid iterable")
     if size is None and isinstance(iterable, Sized):
         size = len(iterable)
     return FACTORY.create(iterable=iterable, size=size, **kwargs)

@@ -15,7 +15,7 @@ class HaloProgressMeterFactory(DefaultProgressMeterFactory):
             with self._module.Halo(text=desc or '', **kwargs):
                 yield from iterable
         else:
-            return iterable
+            yield from iterable
 
     def provides(self, sized, widgets=None, force=False):
         if sized and not force:
