@@ -11,23 +11,23 @@ if sys.version_info < (3, 4):
     sys.exit(1)
 
 setup(
-    name = 'pokrok',
-    version = versioneer.get_version(),
-    cmdclass = versioneer.get_cmdclass(),
-    author = 'John Didion',
-    author_email = 'johndidion@gmail.com',
-    url = 'https://github.com/jdidion/pokrok',
-    description = 'Simple API for progress bars using any of several supported libraries',
-    license = 'MIT',
-    packages = find_packages(),
-    tests_require = ['pytest'], #, 'jinja2', 'pysam'],
-    entry_points = {
-        'pokrok' : [
+    name='pokrok',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
+    author='John Didion',
+    author_email='johndidion@gmail.com',
+    url='https://github.com/jdidion/pokrok',
+    description='Simple API for progress bars using any of several supported libraries',
+    license='MIT',
+    packages=find_packages(),
+    tests_require=['pytest'],  # , 'jinja2', 'pysam'],
+    entry_points={
+        'pokrok': [
             'tqdm=pokrok.plugins.tqdm:TqdmProgressMeterFactory',
             'halo=pokrok.plugins.halo:HaloProgressMeterFactory'
         ]
     },
-    classifiers = [
+    classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Console",
         "Intended Audience :: Developers",
