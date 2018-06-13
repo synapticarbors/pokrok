@@ -10,7 +10,7 @@ TEST = py.test $(pytestops) $(tests)
 
 all:
 	$(BUILD)
-	$(TEST)
+#	$(TEST)
 
 install:
 	$(BUILD)

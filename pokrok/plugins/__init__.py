@@ -1,11 +1,12 @@
 """
 """
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 import enum
 import importlib
 from pkg_resources import iter_entry_points
 import sys
+
 
 # ProgressMeter statuses
 class Status(enum.Enum):
@@ -80,9 +81,9 @@ class PluginManager:
 
         def _find_first_plugin(force=False):
             for plugin_name in plugin_names:
-                plugin = self.get_plugin(plugin_name)
-                if plugin.provides(sized, widgets, force=force):
-                    return plugin
+                _plugin = self.get_plugin(plugin_name)
+                if _plugin.provides(sized, widgets, force=force):
+                    return _plugin
 
         plugin = _find_first_plugin(force=False)
 
@@ -94,7 +95,7 @@ class PluginManager:
         return plugin
 
 
-class ProgressMeterFactory(ABC):
+class ProgressMeterFactory(metaclass=ABCMeta):
     """Plugin base class. A plugin's entry point must provide an instance of
     a ProgressMeterFactory.
     """
@@ -103,7 +104,7 @@ class ProgressMeterFactory(ABC):
     def name(self):
         """The plugin's name.
         """
-        raise NotImplementedError()
+        pass
 
     @property
     @abstractmethod
@@ -113,7 +114,7 @@ class ProgressMeterFactory(ABC):
         Returns:
             True if all required packages are successfully imported.
         """
-        raise NotImplementedError()
+        pass
 
     @abstractmethod
     def provides(self, sized, widgets=None):
@@ -130,7 +131,7 @@ class ProgressMeterFactory(ABC):
         Returns:
             True if the plugin can provide a conforming progress meter.
         """
-        raise NotImplementedError()
+        pass
 
     @abstractmethod
     def create(self, size=None, widgets=None, desc=None, start=None, **kwargs):
@@ -149,7 +150,7 @@ class ProgressMeterFactory(ABC):
         Returns:
             A ProgressMeter instance.
         """
-        raise NotImplementedError()
+        pass
 
     @abstractmethod
     def iterate(
@@ -171,9 +172,8 @@ class ProgressMeterFactory(ABC):
         Returns:
             An iterable. Returns the original iterable if there were any
             problems creating the wrapper.
-
         """
-        raise NotImplementedError()
+        pass
 
 
 class DefaultProgressMeterFactory(ProgressMeterFactory):
@@ -232,7 +232,7 @@ class DefaultProgressMeterFactory(ProgressMeterFactory):
     def create(self, size=None, widgets=None, desc=None, start=None, **kwargs):
         self._load_module()
         return self._progress_meter_class(
-            mod=self._module, size=None, widgets=None, desc=None, start=None,
+            mod=self._module, size=size, widgets=widgets, desc=desc, start=start,
             **kwargs)
 
     def iterate(
@@ -256,7 +256,7 @@ class DefaultProgressMeterFactory(ProgressMeterFactory):
         return self._module not in (None, False)
 
 
-class ProgressMeter(ABC):
+class ProgressMeter(metaclass=ABCMeta):
     """ProgressMeter interface to be implemented by the plugin.
     """
     def __enter__(self):
@@ -330,7 +330,7 @@ class ProgressMeter(ABC):
         return True
 
 
-class BaseProgressMeter(ProgressMeter):
+class BaseProgressMeter(ProgressMeter, metaclass=ABCMeta):
     """Default implementation of ProgressMeter. Subclasses only need to
     implement `increment()`.
     """

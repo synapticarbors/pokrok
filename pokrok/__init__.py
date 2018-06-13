@@ -83,6 +83,7 @@ class ProgressFactory:
                 progress meter.
             style: The desired style.
             plugin_name: The name of a specific plugin to use.
+            kwargs: Additional keyword arguments to pass to the plugin creation method.
 
         Returns:
             A ProgressMeter if `iterable` is None, otherwise an iterable, or
@@ -205,7 +206,7 @@ def progress_file(filename, mode, **kwargs):
         yield from progress_iter(f, **kwargs)
 
 
-def progress_iter(iterable, size = None, **kwargs):
+def progress_iter(iterable, size=None, **kwargs):
     """Wrap an iterable in a progress bar.
 
     Args:

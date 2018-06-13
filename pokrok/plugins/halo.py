@@ -1,5 +1,4 @@
-from pokrok.plugins import (
-    DefaultProgressMeterFactory, BaseProgressMeter, Status)
+from pokrok.plugins import DefaultProgressMeterFactory, BaseProgressMeter
 from pokrok.styles import Style, Widget
 
 

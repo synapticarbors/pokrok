@@ -1,0 +1,5 @@
+v0.1.0
+------
+* Widgets can now be configured with arbitrary attributes.
+* Added a TextWidget for progress bars that support intermixing arbitrary text with other widgets.
+* Added a plugin that logs progress using the buildin python logging module.

@@ -1,14 +1,15 @@
 """Build pokrok.
 """
-import os.path
 import sys
 
 from setuptools import setup, find_packages
 import versioneer
 
+
 if sys.version_info < (3, 4):
     sys.stdout.write("At least Python 3.4 is required.\n")
     sys.exit(1)
+
 
 setup(
     name='pokrok',
@@ -24,7 +25,8 @@ setup(
     entry_points={
         'pokrok': [
             'tqdm=pokrok.plugins.tqdm:TqdmProgressMeterFactory',
-            'halo=pokrok.plugins.halo:HaloProgressMeterFactory'
+            'halo=pokrok.plugins.halo:HaloProgressMeterFactory',
+            'logging=pokrok.plugins.logging:LoggingProgressMeterFactory',
         ]
     },
     classifiers=[

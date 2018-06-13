@@ -26,7 +26,6 @@ pip install pokrok
 This will install pokrok, but for pokrok to be useful it also needs at least one supported progress bar package to be installed. Some examples are:
 
 * tqdm
-* progressbar2
 * halo
 
 # Examples
@@ -38,16 +37,16 @@ import random
 # Configure pokrok with a list of your preferred progress bars, in order. Set
 # exclusive=True to prevent pokrok from using any other packages but the ones
 # you specify.
-pk.set_packages(['tqdm', 'progressbar2', 'halo'], exclusive=True)
+pk.set_plugins(['tqdm', 'halo'], exclusive=True)
 
-# Show progress while iterating 100 times 
+# Show progress while iterating 100 times
 numbers = [random.random() for i in pk.progress_range(100)]
 
 # Show progress while iterating over lines in a file
 for line in pk.progress_file('foo.txt', 'rt'):
     print(line)
 
-# Show progress while iterating over an arbitrary iterable. Since the 
+# Show progress while iterating over an arbitrary iterable. Since the
 # `progress_iter` function doesn't know the number of items over which
 # it is iterating, it must be told explicitly using the 'size' argument.
 def generate_random(n):
@@ -101,21 +100,21 @@ bar = progress_meter(size=100, style=Style([w.ETA, w.ELAPSED, w.BAR]))
 
 ## Fine-grained configuration
 
-**NOTE: the fine-grained configuration support described below is still being implemented.** 
+**NOTE: the fine-grained configuration support described below is still being implemented.**
 
 You can also specify configuration options for each of the progress meter packages you want to support. All configuration options can be set via a JSON configuration file, '.pokrok'. Pokrok looks for this file by default in the following places (in order):
 
 1. ~/pokrok.json
 2. ./pokrok.json
 
-By default, the first file discovered is loaded and used for configuration. You can override or supplement this behavior using the `configure()` function. Configuration options for each package can be specified in a dict via a keyword argument to `configure()`. If a file and keyword arguments are given together, the options in the file override the keyword arguments (i.e. the keyword arguments are treated as defaults for options that are not specified in the file). To override this behavior, call the `configure()` function twice - first with the file, then with the keyword arguments. 
+By default, the first file discovered is loaded and used for configuration. You can override or supplement this behavior using the `configure()` function. Configuration options for each package can be specified in a dict via a keyword argument to `configure()`. If a file and keyword arguments are given together, the options in the file override the keyword arguments (i.e. the keyword arguments are treated as defaults for options that are not specified in the file). To override this behavior, call the `configure()` function twice - first with the file, then with the keyword arguments.
 
 
 ```python
 import pokrok as pk
 
-# Execute the default configuration behavior (this happens by default when the 
-# first progress meter is requested, so while you can call the configure() 
+# Execute the default configuration behavior (this happens by default when the
+# first progress meter is requested, so while you can call the configure()
 # function explicitly, you don't have to unless you intend to override any options.
 pk.configure()
 
@@ -123,7 +122,7 @@ pk.configure()
 # tqdm and halo libraries.
 pk.configure(filename='~/pokrok.json')
 pk.configure(
-    tqdm=dict(ncols=100, unit='sec'), 
+    tqdm=dict(ncols=100, unit='sec'),
     halo=dict(spinner='dots', color='blue')
 )
 ```
