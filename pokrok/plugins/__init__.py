@@ -5,7 +5,6 @@ from collections import OrderedDict
 import enum
 import importlib
 from pkg_resources import iter_entry_points
-import sys
 
 
 # ProgressMeter statuses
@@ -27,23 +26,32 @@ class PluginManager:
         pass
 
     def load_plugins(self, names=None, exclusive=False):
-        plugins = {}
-        for entry_point in iter_entry_points(group='pokrok'):
-            plugin = entry_point.load()
-            if plugin.installed:
-                plugins[entry_point.name] = plugin
+        # Load the factory classes from the discovered entry points
+        plugin_types = dict(
+            (entry_point.name, entry_point.load())
+            for entry_point in iter_entry_points(group='pokrok')
+        )
 
+        # Filter and order if names are provided
         if names:
-            ordered_plugins = OrderedDict()
+            ordered_plugin_types = OrderedDict()
             for name in names:
-                if name in plugins:
-                    ordered_plugins[name] = plugins[name]
+                if name in plugin_types:
+                    ordered_plugin_types[name] = plugin_types[name]
             if not exclusive:
-                for name in (set(plugins.keys()) - set(ordered_plugins.keys())):
-                    ordered_plugins[name] = plugins[name]
-            self.plugins = ordered_plugins
-        else:
-            self.plugins = plugins
+                for name in (
+                        set(plugin_types.keys()) - set(ordered_plugin_types.keys())
+                ):
+                    ordered_plugin_types[name] = plugin_types[name]
+            plugin_types = ordered_plugin_types
+
+        # Finally, only keep the plugins for which the underlying libraries
+        # are installed
+        self.plugins = {}
+        for name, plugin_type in plugin_types.items():
+            plugin = plugin_type()
+            if plugin.installed:
+                self.plugins[name] = plugin
 
     def has_plugin(self, name):
         if not self.plugins:
@@ -53,8 +61,6 @@ class PluginManager:
     def get_plugin(self, name):
         if not self.has_plugin(name):
             raise ValueError("No such plugin: {}".format(name))
-        if isinstance(self.plugins[name], type):
-            self.plugins[name] = self.plugins[name]()
         return self.plugins[name]
 
     def get_first_plugin(self, sized=None, widgets=None):
@@ -134,15 +140,20 @@ class ProgressMeterFactory(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def create(self, size=None, widgets=None, desc=None, start=None, **kwargs):
+    def create(
+            self, size=None, widgets=None, desc=None, start=None, unit=None,
+            multiplier=None, **kwargs
+    ):
         """Create a progress meter that conforms to the requested style.
 
         Args:
-            size: Size of the progress meter.
+            size: Size of the progress meter. This is unaffected by the multiplier.
             widgets: The desired style, or None to use the plugin's default
                 style.
             desc: String description to print next to the progress bar.
             start: Counter start value.
+            unit: The unit of the counter.
+            multiplier: Multiplier for each counter increment.
             kwargs: Additional keyword arguments to pass to the underlying
                 progress meter package. The plugin is free to interpret these
                 arguments as it wishes, including ignoring them.
@@ -154,17 +165,20 @@ class ProgressMeterFactory(metaclass=ABCMeta):
 
     @abstractmethod
     def iterate(
-            self, iterable, size=None, widgets=None, desc=None, start=None,
-            **kwargs):
+            self, iterable, size=None, widgets=None, desc=None, start=None, unit=None,
+            multiplier=None, **kwargs
+    ):
         """Wrap an iterable with a progress meter.
 
         Args:
             iterable: The iterable to wrap.
-            size: Size of the progress meter.
+            size: Size of the progress meter. This is unaffected by the multiplier.
             widgets: The desired style, or None to use the plugin's default
                 style.
             desc: String description to print next to the progress bar.
             start: Counter start value.
+            unit: The unit of the counter.
+            multiplier: Multiplier for each counter increment.
             kwargs: Additional keyword arguments to pass to the underlying
                 progress meter package. The plugin is free to interpret these
                 arguments as it wishes, including ignoring them.
@@ -206,6 +220,7 @@ class DefaultProgressMeterFactory(ProgressMeterFactory):
     def name(self):
         return self._name
 
+    @property
     def installed(self):
         return self._load_module()
 
@@ -227,18 +242,28 @@ class DefaultProgressMeterFactory(ProgressMeterFactory):
         if not provided_widgets:
             return False
 
-        return len(set(widgets) - set(provided_widgets)) == 0
+        # If trying to force the plugin to provide a progress meter, return True
+        # if the plugin provides *any* of the requested widgets, otherwise require
+        # that it provides *all* of the requested widgets.
+        if force:
+            return len(set(widgets) & set(provided_widgets)) > 0
+        else:
+            return len(set(widgets) - set(provided_widgets)) == 0
 
-    def create(self, size=None, widgets=None, desc=None, start=None, **kwargs):
-        self._load_module()
-        return self._progress_meter_class(
-            mod=self._module, size=size, widgets=widgets, desc=desc, start=start,
-            **kwargs)
+    def create(
+            self, size=None, widgets=None, desc=None, start=None, unit=None,
+            multiplier=None, **kwargs
+    ):
+        if self._load_module():
+            return self._progress_meter_class(
+                mod=self._module, size=size, widgets=widgets, desc=desc, start=start,
+                unit=unit, multiplier=multiplier, **kwargs)
 
     def iterate(
-            self, iterable, size=None, widgets=None, desc=None, start=None,
-            **kwargs):
-        pbar = self.create(size, widgets, desc, start, **kwargs)
+            self, iterable, size=None, widgets=None, desc=None, start=None, unit=None,
+            multiplier=None, **kwargs
+    ):
+        pbar = self.create(size, widgets, desc, start, unit, multiplier, **kwargs)
         if pbar:
             with pbar:
                 for item in iterable:
@@ -269,7 +294,7 @@ class ProgressMeter(metaclass=ABCMeta):
     @property
     @abstractmethod
     def is_sized(self):
-        raise NotImplementedError()
+        pass
 
     @property
     @abstractmethod
@@ -277,7 +302,7 @@ class ProgressMeter(metaclass=ABCMeta):
         """The current status of the ProgressMeter. Must be one of the
         enumerated values.
         """
-        raise NotImplementedError()
+        pass
 
     def start(self):
         """Initialize and show the progress meter.
@@ -292,7 +317,8 @@ class ProgressMeter(metaclass=ABCMeta):
 
     @abstractmethod
     def increment(self, n=1):
-        """Increment the progress meter by a fixed amount (default=1).
+        """Increment the progress meter by a fixed amount (default=1). The increment
+        will be multiplied by the multiplier if specified.
 
         Args:
             n: The amount to increment.
@@ -300,7 +326,7 @@ class ProgressMeter(metaclass=ABCMeta):
         Returns:
             The current value after incrementing.
         """
-        raise NotImplementedError()
+        pass
 
     def _check_status(self, status=Status.STARTED, error=True):
         """Checks that the ProgressMeter's status matches `stats`.
@@ -353,16 +379,3 @@ class BaseProgressMeter(ProgressMeter, metaclass=ABCMeta):
     def finish(self):
         self._check_status(Status.STARTED)
         self._status = Status.FINISHED
-
-
-class SimpleTextProgressMeter(BaseProgressMeter):
-    """Simplest progress meter implementation. Simply prints a character each
-    time it is incremented.
-    """
-    def __init__(self, char='*', file=sys.stderr, **kwargs):
-        super().__init__()
-        self.char = char
-        self.file = file
-
-    def increment(self, n=1):
-        print(self.char * n, file=self.file)

@@ -52,13 +52,20 @@ class ProgressFactory:
                     break
 
         if filename:
+            config = None
             if os.path.exists(filename):
                 with open(filename, 'rt') as inp:
                     config = json.load(inp)
             else:
-                config = json.load(stream_from_package(filename))
-                if config is None:
-                    raise ValueError("File not found: {}".format(filename))
+                try:
+                    package, path = filename.split(':')
+                    import pkg_resources as pr
+                    if pr.resource_exists(package, path):
+                        config = json.load(pr.resource_stream(package, path))
+                except:
+                    pass
+            if config is None:
+                raise ValueError("File not found: {}".format(filename))
             self.plugins.set_plugin_options(config)
             self.styles.set_style_options(config)
             self.configured = True
@@ -123,17 +130,6 @@ class ProgressFactory:
             return iterable
         else:
             return None
-
-
-def stream_from_package(spec):
-    try:
-        package, path = spec.split(':')
-        import pkg_resources as pr
-        if pr.resource_exists(package, path):
-            return pr.resource_stream(package, path)
-    except:
-        pass
-    return None
 
 
 # Singleton factory class

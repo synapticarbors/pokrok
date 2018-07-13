@@ -8,10 +8,11 @@ class HaloProgressMeterFactory(DefaultProgressMeterFactory):
         super().__init__('halo', HaloProgressMeter, style_superset)
 
     def iterate(
-            self, iterable, size=None, widgets=None, desc=None, start=None,
-            **kwargs):
+            self, iterable, size=None, widgets=None, desc=None, start=None, unit=None,
+            multiplier=None, **kwargs
+    ):
         if self._load_module():
-            with self._module.Halo(text=desc or '', **kwargs):
+            with self._module.Halo(text=desc or ''):
                 yield from iterable
         else:
             yield from iterable
@@ -20,14 +21,17 @@ class HaloProgressMeterFactory(DefaultProgressMeterFactory):
         if sized and not force:
             return False
         if widgets:
-            return len(widgets) == 1 and widgets[1] == Widget.SPINNER
+            if force:
+                return Widget.SPINNER in widgets
+            else:
+                return len(widgets) == 1 and widgets[0] == Widget.SPINNER
         return True
 
 
 class HaloProgressMeter(BaseProgressMeter):
-    def __init__(self, mod, size, widgets, desc, start, **kwargs):
+    def __init__(self, mod, size, widgets, desc, start, unit, multiplier, **kwargs):
         super().__init__(size)
-        self.spinner = mod.Halo(text=desc or '', **kwargs)
+        self.spinner = mod.Halo(text=desc or '')
 
     def start(self):
         super().start()

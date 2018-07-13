@@ -25,6 +25,7 @@ setup(
     entry_points={
         'pokrok': [
             'tqdm=pokrok.plugins.tqdm:TqdmProgressMeterFactory',
+            'progressbar2=pokrok.plugins.progressbar2:Progressbar2ProgressMeterFactory',
             'halo=pokrok.plugins.halo:HaloProgressMeterFactory',
             'logging=pokrok.plugins.logging:LoggingProgressMeterFactory',
         ]

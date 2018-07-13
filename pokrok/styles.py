@@ -1,56 +1,16 @@
 import enum
 
 
-class WidgetType(enum.Enum):
+class Widget(enum.Enum):
+    """Enumeration of widget types that are commonly supported across progress
+    bar libraries.
+    """
     BAR = 'BAR'
     ETA = 'ETA'
     ELAPSED = 'ELAPSED'
     SPINNER = 'SPINNER'
     COUNTER = 'COUNTER'
     PERCENT = 'PERCENT'
-    TEXT = 'TEXT'
-
-
-class WidgetMeta(type):
-    _cache = {}
-
-    def __getattr__(cls, key):
-        if key not in WidgetMeta._cache:
-            WidgetMeta._cache[key] = Widget(WidgetType[key])
-        return WidgetMeta._cache[key]
-
-
-class Widget(metaclass=WidgetMeta):
-    def __init__(self, widget, config=None):
-        self.widget_type = widget
-        self.config = config
-
-    def __eq__(self, other):
-        if isinstance(other, WidgetType):
-            return self.widget_type == other
-        elif not isinstance(other, Widget):
-            return False
-        elif self.widget_type != other.widget_type:
-            return False
-        elif self.config is not None and other.config is not None:
-            return self.config == other.config
-        else:
-            return True
-
-    def __hash__(self):
-        return hash(self.widget_type)
-
-    def __repr__(self):
-        return "Widget<type={}, config={}>".format(self.widget_type, self.config)
-
-
-class TextWidget(Widget):
-    def __init__(self, text):
-        super().__init__(WidgetType.TEXT, config=dict(text=text))
-
-    @property
-    def text(self):
-        return self.config['text']
 
 
 class StyleManager(dict):
