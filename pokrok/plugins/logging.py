@@ -71,7 +71,7 @@ class LoggingProgressMeter(BaseProgressMeter):
                     if suffix:
                         message.append('{count:.2f}/' + '{:.2f}'.format(size) + suffix)
                     else:
-                        message.append('{count}/' + size)
+                        message.append('{count}/' + str(size))
                 else:
                     message.append('{count}')
                 if unit:
