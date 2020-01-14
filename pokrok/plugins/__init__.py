@@ -1,9 +1,9 @@
-"""
-"""
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 import enum
 import importlib
+from typing import Iterable, Optional
+
 from pkg_resources import iter_entry_points
 
 
@@ -29,7 +29,7 @@ class PluginManager:
         # Load the factory classes from the discovered entry points
         plugin_types = dict(
             (entry_point.name, entry_point.load())
-            for entry_point in iter_entry_points(group='pokrok')
+            for entry_point in iter_entry_points(group="pokrok")
         )
 
         # Filter and order if names are provided
@@ -39,9 +39,7 @@ class PluginManager:
                 if name in plugin_types:
                     ordered_plugin_types[name] = plugin_types[name]
             if not exclusive:
-                for name in (
-                        set(plugin_types.keys()) - set(ordered_plugin_types.keys())
-                ):
+                for name in set(plugin_types.keys()) - set(ordered_plugin_types.keys()):
                     ordered_plugin_types[name] = plugin_types[name]
             plugin_types = ordered_plugin_types
 
@@ -64,7 +62,8 @@ class PluginManager:
         return self.plugins[name]
 
     def get_first_plugin(self, sized=None, widgets=None):
-        """Returns the first plugin that can provide a progress meter of the
+        """
+        Returns the first plugin that can provide a progress meter of the
         specified configuration.
 
         Args:
@@ -102,29 +101,32 @@ class PluginManager:
 
 
 class ProgressMeterFactory(metaclass=ABCMeta):
-    """Plugin base class. A plugin's entry point must provide an instance of
+    """
+    Plugin base class. A plugin's entry point must provide an instance of
     a ProgressMeterFactory.
     """
+
     @property
     @abstractmethod
     def name(self):
-        """The plugin's name.
         """
-        pass
+        The plugin's name.
+        """
 
     @property
     @abstractmethod
     def installed(self):
-        """Import the package(s) depended upon by this module.
+        """
+        Imports the package(s) depended upon by this module.
 
         Returns:
             True if all required packages are successfully imported.
         """
-        pass
 
     @abstractmethod
     def provides(self, sized, widgets=None):
-        """Whether the plugin can provide a progress meter that conforms to the
+        """
+        Whether the plugin can provide a progress meter that conforms to the
         specified style. The plugin is free to interpret this request as it sees
         fit, including ignoring or substituting widgets.
 
@@ -137,14 +139,20 @@ class ProgressMeterFactory(metaclass=ABCMeta):
         Returns:
             True if the plugin can provide a conforming progress meter.
         """
-        pass
 
     @abstractmethod
     def create(
-            self, size=None, widgets=None, desc=None, start=None, unit=None,
-            multiplier=None, **kwargs
+        self,
+        size=None,
+        widgets=None,
+        desc=None,
+        start=None,
+        unit=None,
+        multiplier=None,
+        **kwargs
     ):
-        """Create a progress meter that conforms to the requested style.
+        """
+        Creates a progress meter that conforms to the requested style.
 
         Args:
             size: Size of the progress meter. This is unaffected by the multiplier.
@@ -161,14 +169,21 @@ class ProgressMeterFactory(metaclass=ABCMeta):
         Returns:
             A ProgressMeter instance.
         """
-        pass
 
     @abstractmethod
     def iterate(
-            self, iterable, size=None, widgets=None, desc=None, start=None, unit=None,
-            multiplier=None, **kwargs
+        self,
+        iterable: Iterable,
+        size: Optional[int] = None,
+        widgets=None,
+        desc: Optional[str] = None,
+        start: Optional[int] = None,
+        unit: Optional[str] = None,
+        multiplier: Optional[int] = None,
+        **kwargs
     ):
-        """Wrap an iterable with a progress meter.
+        """
+        Wraps an iterable with a progress meter.
 
         Args:
             iterable: The iterable to wrap.
@@ -187,11 +202,65 @@ class ProgressMeterFactory(metaclass=ABCMeta):
             An iterable. Returns the original iterable if there were any
             problems creating the wrapper.
         """
+
+
+class BaseProgressMeterFactory(ProgressMeterFactory, metaclass=ABCMeta):
+    @property
+    @abstractmethod
+    def style_superset(self):
         pass
 
+    def provides(self, sized: bool, widgets=None, force=False):
+        """
+        Returns True if this plugin can provide a progress bar for the
+        requested parameter.
 
-class DefaultProgressMeterFactory(ProgressMeterFactory):
-    """Default implementation of ProgressMeterFactory. Assumes that a) the
+        Args:
+            sized: Whether a sized meter bar is requested.
+            widgets: Requested set of widgets.
+            force: Whether to try to force the plugin to provide a progress
+                meter with the specified parameters, even if it typically
+                would not.
+        """
+        if not (widgets and self.style_superset):
+            return True
+
+        provided_widgets = self.style_superset.get_widgets(sized)
+        if not provided_widgets:
+            return False
+
+        # If trying to force the plugin to provide a progress meter, return True
+        # if the plugin provides *any* of the requested widgets, otherwise require
+        # that it provides *all* of the requested widgets.
+        if force:
+            return len(set(widgets) & set(provided_widgets)) > 0
+        else:
+            return len(set(widgets) - set(provided_widgets)) == 0
+
+    def iterate(
+        self,
+        iterable: Iterable,
+        size: Optional[int] = None,
+        widgets=None,
+        desc=None,
+        start=None,
+        unit=None,
+        multiplier=None,
+        **kwargs
+    ):
+        pbar = self.create(size, widgets, desc, start, unit, multiplier, **kwargs)
+        if pbar:
+            with pbar:
+                for item in iterable:
+                    yield item
+                    pbar.increment()
+        else:
+            return iterable
+
+
+class DefaultProgressMeterFactory(BaseProgressMeterFactory):
+    """
+    Default implementation of ProgressMeterFactory. Assumes that a) the
     underlying package is in a module that can be imported using importlib
     (if it is installed), b) the package supports any desired progress
     meter configuration (override `provides` if this isn't true), and c)
@@ -206,9 +275,8 @@ class DefaultProgressMeterFactory(ProgressMeterFactory):
             by the plugin.
         module_name: The name of the module, if different from `name`.
     """
-    def __init__(
-            self, name, progress_meter_class, style_superset,
-            module_name=None):
+
+    def __init__(self, name, progress_meter_class, style_superset, module_name=None):
         super().__init__()
         self._name = name
         self._package = module_name or name
@@ -224,53 +292,31 @@ class DefaultProgressMeterFactory(ProgressMeterFactory):
     def installed(self):
         return self._load_module()
 
-    def provides(self, sized, widgets=None, force=False):
-        """Return True if this plugin can provide a progress bar for the
-        requested parameter.
-
-        Args:
-            sized: Whether a sized meter bar is requested.
-            widgets: Requested set of widgets.
-            force: Whether to try to force the plugin to provide a progress
-                meter with the specified parameters, even if it typically
-                would not.
-        """
-        if not (widgets and self._style_superset):
-            return True
-
-        provided_widgets = self._style_superset.get_widgets(sized)
-        if not provided_widgets:
-            return False
-
-        # If trying to force the plugin to provide a progress meter, return True
-        # if the plugin provides *any* of the requested widgets, otherwise require
-        # that it provides *all* of the requested widgets.
-        if force:
-            return len(set(widgets) & set(provided_widgets)) > 0
-        else:
-            return len(set(widgets) - set(provided_widgets)) == 0
+    @property
+    def style_superset(self):
+        return self._style_superset
 
     def create(
-            self, size=None, widgets=None, desc=None, start=None, unit=None,
-            multiplier=None, **kwargs
+        self,
+        size=None,
+        widgets=None,
+        desc=None,
+        start=None,
+        unit=None,
+        multiplier=None,
+        **kwargs
     ):
         if self._load_module():
             return self._progress_meter_class(
-                mod=self._module, size=size, widgets=widgets, desc=desc, start=start,
-                unit=unit, multiplier=multiplier, **kwargs)
-
-    def iterate(
-            self, iterable, size=None, widgets=None, desc=None, start=None, unit=None,
-            multiplier=None, **kwargs
-    ):
-        pbar = self.create(size, widgets, desc, start, unit, multiplier, **kwargs)
-        if pbar:
-            with pbar:
-                for item in iterable:
-                    yield item
-                    pbar.increment()
-        else:
-            return iterable
+                mod=self._module,
+                size=size,
+                widgets=widgets,
+                desc=desc,
+                start=start,
+                unit=unit,
+                multiplier=multiplier,
+                **kwargs
+            )
 
     def _load_module(self):
         if self._module is None:
@@ -284,6 +330,7 @@ class DefaultProgressMeterFactory(ProgressMeterFactory):
 class ProgressMeter(metaclass=ABCMeta):
     """ProgressMeter interface to be implemented by the plugin.
     """
+
     def __enter__(self):
         self.start()
         return self
@@ -349,7 +396,8 @@ class ProgressMeter(metaclass=ABCMeta):
             if error:
                 raise ProgressMeterError(
                     "The ProgressMeter status {} differs from expected status "
-                    "{}".format(self.status, status))
+                    "{}".format(self.status, status)
+                )
             else:
                 return False
 
@@ -360,6 +408,7 @@ class BaseProgressMeter(ProgressMeter, metaclass=ABCMeta):
     """Default implementation of ProgressMeter. Subclasses only need to
     implement `increment()`.
     """
+
     def __init__(self, size=None):
         self._status = Status.UNSTARTED
         self.size = size
